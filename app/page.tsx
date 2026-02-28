@@ -3,7 +3,7 @@ import NewPostForm from './NewPostForm'
 import { supabase } from './supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-
+import PostActions from './PostActions'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
@@ -81,6 +81,11 @@ export default async function Home() {
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
                       {p.content}
                     </p>
+                    <PostActions
+  postId={p.id}
+  authorUserId={p.user_id}
+  initialContent={p.content}
+/>
                   </div>
                 </div>
               </CardContent>
