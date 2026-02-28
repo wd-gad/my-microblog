@@ -40,12 +40,40 @@ export default async function Home() {
               key={p.id}
               style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}
             >
-              <a
-                 href={`/u/${p.user_id}`}
-                  style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, display: 'inline-block' }}
-                >
-                {p.profiles?.display_name ?? 'Unknown'}
-              </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+  <div
+    style={{
+      width: 24,
+      height: 24,
+      borderRadius: 999,
+      border: '1px solid #ddd',
+      overflow: 'hidden',
+      display: 'grid',
+      placeItems: 'center',
+      fontSize: 10,
+      opacity: 0.7,
+      flex: '0 0 auto',
+    }}
+  >
+    {p.profiles?.avatar_url ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={p.profiles.avatar_url}
+        alt="avatar"
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+    ) : (
+      'No'
+    )}
+  </div>
+
+  <a
+    href={`/u/${p.user_id}`}
+    style={{ fontSize: 12, opacity: 0.85, display: 'inline-block', textDecoration: 'none' }}
+  >
+    {p.profiles?.display_name ?? 'Unknown'}
+  </a>
+</div>
               <div style={{ whiteSpace: 'pre-wrap' }}>{p.content}</div>
               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
                 {new Date(p.created_at).toLocaleString('ja-JP')}
