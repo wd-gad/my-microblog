@@ -68,7 +68,13 @@ export default async function Home() {
                         {p.profiles?.display_name ?? 'Unknown'}
                       </a>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(p.created_at).toLocaleString('ja-JP')}
+                        {new Date(p.created_at).toLocaleString('ja-JP', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+})}
                       </span>
                     </div>
 
