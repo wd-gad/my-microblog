@@ -40,9 +40,12 @@ export default async function Home() {
               key={p.id}
               style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}
             >
-              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  {p.profiles?.display_name ?? 'Unknown'}
-              </div>
+              <a
+                 href={`/u/${p.user_id}`}
+                  style={{ fontSize: 12, opacity: 0.7, marginBottom: 6, display: 'inline-block' }}
+                >
+                {p.profiles?.display_name ?? 'Unknown'}
+              </a>
               <div style={{ whiteSpace: 'pre-wrap' }}>{p.content}</div>
               <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
                 {new Date(p.created_at).toLocaleString('ja-JP')}
