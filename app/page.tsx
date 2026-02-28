@@ -102,6 +102,12 @@ export default async function Home() {
 
               <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
 
+              {post.media_url && (
+                <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800">
+                  <img src={post.media_url} alt="Post Attachment" className="w-full h-auto max-h-96 object-cover" />
+                </div>
+              )}
+
               <div className="mt-3 pt-3 border-t border-zinc-800/60 flex items-center justify-between">
                 <PostEngagement
                   postId={post.id}
