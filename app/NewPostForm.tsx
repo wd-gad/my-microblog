@@ -73,7 +73,7 @@ export default function NewPostForm() {
         placeholder="いま何してる？"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-600 resize-none outline-none leading-relaxed"
+        className="w-full bg-transparent text-sm text-white placeholder-zinc-500 resize-none outline-none leading-relaxed"
       />
 
       {file && (

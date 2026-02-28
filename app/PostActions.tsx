@@ -70,13 +70,13 @@ export default function PostActions(props: {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4 shadow-2xl">
-            <h2 className="text-sm font-semibold text-zinc-100">Edit post</h2>
+          <div className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col gap-4 shadow-2xl">
+            <h2 className="text-sm font-semibold text-white">Edit post</h2>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={6}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 resize-none outline-none focus:ring-1 focus:ring-indigo-500 leading-relaxed"
+              className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-white placeholder-zinc-500 resize-none outline-none focus:ring-1 focus:ring-indigo-500 leading-relaxed"
             />
             {err && <p className="text-xs text-red-400">{err}</p>}
             <div className="flex justify-end gap-2">
