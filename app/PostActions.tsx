@@ -83,13 +83,18 @@ export default function PostActions(props: {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg space-y-4">
           <DialogHeader>
             <DialogTitle>Edit post</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
-            <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={6} />
+            <Textarea
+  value={content}
+  onChange={(e) => setContent(e.target.value)}
+  rows={6}
+  className="bg-background text-foreground"
+/>
             {err && <div className="text-sm text-red-600">{err}</div>}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
