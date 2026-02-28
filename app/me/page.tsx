@@ -189,7 +189,7 @@ const uploadAvatarCropped = async () => {
     }
 
     const blob = await getCroppedBlob(previewUrl, croppedAreaPixels)
-    const path = `${user.id}/avatar.jpg`
+    const path = `${user.id}/avatar-${Date.now()}.jpg`
 
     const { error: upErr } = await supabase.storage
       .from('avatars')
