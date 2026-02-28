@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from './supabase'
+import ImageCropperModal from './ImageCropperModal'
 
 const MAX_MB = 100
 const MAX_BYTES = MAX_MB * 1024 * 1024
@@ -13,6 +14,7 @@ export default function NewPostForm() {
   const [content, setContent] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [cropModalSrc, setCropModalSrc] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,12 +27,28 @@ export default function NewPostForm() {
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setError(null)
-    setFile(f)
+
     if (f && f.type.startsWith('image/')) {
-      setPreviewUrl(URL.createObjectURL(f))
+      const reader = new FileReader()
+      reader.onload = () => {
+        setCropModalSrc(reader.result as string)
+      }
+      reader.readAsDataURL(f)
     } else {
+      setFile(f)
       setPreviewUrl(null)
     }
+  }
+
+  const handleCropConfirm = (croppedFile: File) => {
+    setFile(croppedFile)
+    setPreviewUrl(URL.createObjectURL(croppedFile))
+    setCropModalSrc(null)
+  }
+
+  const handleCropCancel = () => {
+    setCropModalSrc(null)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -141,6 +159,14 @@ export default function NewPostForm() {
           {loading ? '投稿中…' : '投稿'}
         </button>
       </div>
+
+      {cropModalSrc && (
+        <ImageCropperModal
+          imageSrc={cropModalSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </form>
   )
 }
