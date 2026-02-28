@@ -23,27 +23,41 @@ export default function AuthBar() {
   const [profile, setProfile] = useState<Profile | null>(null)
 
   const load = async () => {
-    const { data } = await supabase.auth.getUser()
-    const user = data.user
-    setEmail(user?.email ?? null)
+    try {
+      const { data, error } = await supabase.auth.getUser()
+      if (error) console.error('auth.getUser error', error)
 
-    if (user) {
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url')
-        .eq('id', user.id)
-        .single()
-      setProfile((p as any) ?? null)
-    } else {
+      const user = data.user
+      setEmail(user?.email ?? null)
+
+      if (user) {
+        const { data: p, error: pe } = await supabase
+          .from('profiles')
+          .select('display_name, avatar_url')
+          .eq('id', user.id)
+          .single()
+
+        if (pe) console.error('profiles fetch error', pe)
+        setProfile((p as any) ?? null)
+      } else {
+        setProfile(null)
+      }
+    } catch (e) {
+      console.error('AuthBar load fatal', e)
+      setEmail(null)
       setProfile(null)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   useEffect(() => {
     load()
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load())
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      // ここも例外で固まらないように
+      setLoading(true)
+      load()
+    })
     return () => sub.subscription.unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
