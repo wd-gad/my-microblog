@@ -9,6 +9,7 @@ type Profile = {
   id: string
   display_name: string | null
   avatar_url: string | null
+  bio: string | null
 }
 
 type Post = {
@@ -48,7 +49,7 @@ export default function UserPage() {
 
       const { data: p, error: pe } = await supabase
         .from('profiles')
-        .select('id, display_name, avatar_url')
+        .select('id, display_name, avatar_url, bio')
         .eq('id', userId)
         .single()
 
@@ -100,6 +101,12 @@ export default function UserPage() {
           <p className="text-xs text-zinc-500 truncate mt-0.5">{userId}</p>
         </div>
       </div>
+
+      {profile?.bio && (
+        <div className="bg-zinc-900 border border-zinc-800/60 rounded-2xl p-5 text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">
+          {profile.bio}
+        </div>
+      )}
 
       <div className="space-y-3">
         {loading ? (
