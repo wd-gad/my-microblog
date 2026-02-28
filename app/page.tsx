@@ -1,86 +1,84 @@
-import { supabase } from './supabase'
-import NewPostForm from './NewPostForm'
 import AuthBar from './AuthBar'
+import NewPostForm from './NewPostForm'
+import { supabase } from './supabase'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
 export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const { data: posts, error } = await supabase
-  .from('posts')
-  .select(`
-    id,
-    content,
-    created_at,
-    user_id,
-    profiles (
+    .from('posts')
+    .select(`
       id,
-      display_name,
-      avatar_url
-    )
-  `)
-  .order('created_at', { ascending: false })
-  return (
-    <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
-      <AuthBar />
-      <NewPostForm />
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>
-        My Microblog
-      </h1>
+      content,
+      created_at,
+      user_id,
+      profiles (
+        id,
+        display_name,
+        avatar_url
+      )
+    `)
+    .order('created_at', { ascending: false })
 
-      {error && (
-        <p style={{ color: 'crimson' }}>
-          Supabase error: {error.message}
-        </p>
-      )}
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">My Microblog</h1>
+        <AuthBar />
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">New Post</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NewPostForm />
+        </CardContent>
+      </Card>
+
+      {error && <p className="text-sm text-red-600">Supabase error: {error.message}</p>}
 
       {!posts || posts.length === 0 ? (
-        <p>まだ投稿がありません（または取得できていません）。</p>
+        <p className="text-sm text-muted-foreground">まだ投稿がありません。</p>
       ) : (
-        <ul style={{ display: 'grid', gap: 12, listStyle: 'none', padding: 0 }}>
+        <div className="space-y-3">
           {posts.map((p: any) => (
-            <li
-              key={p.id}
-              style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-  <div
-    style={{
-      width: 24,
-      height: 24,
-      borderRadius: 999,
-      border: '1px solid #ddd',
-      overflow: 'hidden',
-      display: 'grid',
-      placeItems: 'center',
-      fontSize: 10,
-      opacity: 0.7,
-      flex: '0 0 auto',
-    }}
-  >
-    {p.profiles?.avatar_url ? (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={p.profiles.avatar_url}
-        alt="avatar"
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-      />
-    ) : (
-      'No'
-    )}
-  </div>
+            <Card key={p.id}>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <a href={`/u/${p.user_id}`} className="shrink-0">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={p.profiles?.avatar_url ?? ''} alt="avatar" />
+                      <AvatarFallback>
+                        {(p.profiles?.display_name ?? 'U').slice(0, 1).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </a>
 
-  <a
-    href={`/u/${p.user_id}`}
-    style={{ fontSize: 12, opacity: 0.85, display: 'inline-block', textDecoration: 'none' }}
-  >
-    {p.profiles?.display_name ?? 'Unknown'}
-  </a>
-</div>
-              <div style={{ whiteSpace: 'pre-wrap' }}>{p.content}</div>
-              <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
-                {new Date(p.created_at).toLocaleString('ja-JP')}
-              </div>
-            </li>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`/u/${p.user_id}`}
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {p.profiles?.display_name ?? 'Unknown'}
+                      </a>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(p.created_at).toLocaleString('ja-JP')}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                      {p.content}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
-        </ul>
+        </div>
       )}
     </main>
   )

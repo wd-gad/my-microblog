@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { supabase } from './supabase'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 export default function NewPostForm() {
   const [content, setContent] = useState('')
@@ -9,54 +11,44 @@ export default function NewPostForm() {
   const [error, setError] = useState<string | null>(null)
 
   const submit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setError(null)
+    e.preventDefault()
+    setError(null)
 
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) {
-    setError('投稿するにはログインしてください')
-    return
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) {
+      setError('投稿するにはログインしてください')
+      return
+    }
+
+    const trimmed = content.trim()
+    if (!trimmed) return
+
+    setLoading(true)
+    const { error } = await supabase.from('posts').insert({ content: trimmed })
+    setLoading(false)
+
+    if (error) {
+      setError(error.message)
+      return
+    }
+
+    setContent('')
+    window.location.reload()
   }
-
-  const trimmed = content.trim()
-  if (!trimmed) return
-
-  setLoading(true)
-  const { error } = await supabase.from('posts').insert({ content: trimmed })
-  setLoading(false)
-
-  if (error) {
-    setError(error.message)
-    return
-  }
-
-  setContent('')
-  window.location.reload()
-}
 
   return (
-    <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
-      <textarea
+    <form onSubmit={submit} className="space-y-3">
+      <Textarea
         rows={3}
         placeholder="いま何してる？"
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        style={{
-          width: '100%',
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          padding: 12,
-        }}
       />
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ border: '1px solid #ddd', borderRadius: 8, padding: '8px 14px' }}
-        >
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={loading}>
           {loading ? '投稿中…' : '投稿'}
-        </button>
-        {error && <span style={{ color: 'crimson', fontSize: 12 }}>{error}</span>}
+        </Button>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </form>
   )
