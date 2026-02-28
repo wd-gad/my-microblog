@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import NewPostForm from './NewPostForm'
+import AuthBar from './AuthBar'
 export const dynamic = 'force-dynamic'
 export default async function Home() {
   const { data: posts, error } = await supabase
@@ -9,6 +10,7 @@ export default async function Home() {
 
   return (
     <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
+      <AuthBar />
       <NewPostForm />
       <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>
         My Microblog

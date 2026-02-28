@@ -9,25 +9,30 @@ export default function NewPostForm() {
   const [error, setError] = useState<string | null>(null)
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+  e.preventDefault()
+  setError(null)
 
-    const trimmed = content.trim()
-    if (!trimmed) return
-
-    setLoading(true)
-    const { error } = await supabase.from('posts').insert({ content: trimmed })
-    setLoading(false)
-
-    if (error) {
-      setError(error.message)
-      return
-    }
-
-    setContent('')
-    // MVP: 再読み込みで一覧更新
-    window.location.reload()
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) {
+    setError('投稿するにはログインしてください')
+    return
   }
+
+  const trimmed = content.trim()
+  if (!trimmed) return
+
+  setLoading(true)
+  const { error } = await supabase.from('posts').insert({ content: trimmed })
+  setLoading(false)
+
+  if (error) {
+    setError(error.message)
+    return
+  }
+
+  setContent('')
+  window.location.reload()
+}
 
   return (
     <form onSubmit={submit} style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
