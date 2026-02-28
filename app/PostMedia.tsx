@@ -2,8 +2,27 @@
 import { useState } from 'react'
 import ImageViewerModal from './ImageViewerModal'
 
-export default function PostImage({ src, alt }: { src: string; alt: string }) {
+export default function PostMedia({ src, alt }: { src: string; alt: string }) {
     const [viewerOpen, setViewerOpen] = useState(false)
+
+    const isVideo = src.match(/\.(mp4|webm|mov|mkv|ogg)(\?.*)?$/i)
+    const isAudio = src.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/i)
+
+    if (isVideo) {
+        return (
+            <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800/60 bg-black">
+                <video src={src} controls preload="metadata" className="w-full h-auto max-h-[28rem] object-contain" />
+            </div>
+        )
+    }
+
+    if (isAudio) {
+        return (
+            <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-900 p-4">
+                <audio src={src} controls preload="metadata" className="w-full" />
+            </div>
+        )
+    }
 
     return (
         <>

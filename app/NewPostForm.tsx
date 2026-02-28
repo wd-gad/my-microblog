@@ -29,11 +29,15 @@ export default function NewPostForm() {
     setError(null)
 
     if (f && f.type.startsWith('image/')) {
+      setFile(f)
       const reader = new FileReader()
       reader.onload = () => {
         setCropModalSrc(reader.result as string)
       }
       reader.readAsDataURL(f)
+    } else if (f && (f.type.startsWith('video/') || f.type.startsWith('audio/'))) {
+      setFile(f)
+      setPreviewUrl(URL.createObjectURL(f))
     } else {
       setFile(f)
       setPreviewUrl(null)
@@ -48,7 +52,15 @@ export default function NewPostForm() {
 
   const handleCropCancel = () => {
     setCropModalSrc(null)
+    setFile(null)
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const handleSkipCrop = () => {
+    setCropModalSrc(null)
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file))
+    }
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -106,7 +118,15 @@ export default function NewPostForm() {
       {file && (
         <div className="relative rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800">
           {previewUrl ? (
-            <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-64 object-cover" />
+            file?.type.startsWith('video/') ? (
+              <video src={previewUrl} controls className="w-full h-auto max-h-64 bg-black object-contain" />
+            ) : file?.type.startsWith('audio/') ? (
+              <div className="p-4 bg-zinc-900 flex items-center justify-center">
+                <audio src={previewUrl} controls className="w-full" />
+              </div>
+            ) : (
+              <img src={previewUrl} alt="Preview" className="w-full h-auto max-h-64 object-contain bg-black" />
+            )
           ) : (
             <div className="flex items-center gap-2 text-xs text-zinc-400 p-3">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -165,6 +185,7 @@ export default function NewPostForm() {
           imageSrc={cropModalSrc}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
+          onSkipCrop={handleSkipCrop}
         />
       )}
     </form>

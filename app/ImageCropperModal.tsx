@@ -47,10 +47,12 @@ export default function ImageCropperModal({
     imageSrc,
     onCancel,
     onConfirm,
+    onSkipCrop,
 }: {
     imageSrc: string
     onCancel: () => void
     onConfirm: (file: File) => void
+    onSkipCrop: () => void
 }) {
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
@@ -147,21 +149,30 @@ export default function ImageCropperModal({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+                <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-zinc-800">
                     <button
-                        onClick={onCancel}
+                        onClick={onSkipCrop}
                         disabled={processing}
-                        className="px-4 py-2 rounded-xl text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                        className="px-4 py-2 rounded-xl text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors sm:mr-auto"
                     >
-                        キャンセル
+                        元の画像をそのまま使う
                     </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={processing}
-                        className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-                    >
-                        {processing ? '処理中...' : '決定'}
-                    </button>
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={onCancel}
+                            disabled={processing}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            disabled={processing}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                        >
+                            {processing ? '処理中...' : '切り抜いて決定'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

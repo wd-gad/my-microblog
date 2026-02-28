@@ -3,7 +3,7 @@ import Link from 'next/link'
 import NewPostForm from './NewPostForm'
 import PostActions from './PostActions'
 import PostEngagement from './PostEngagement'
-import PostImage from './PostImage'
+import PostMedia from './PostMedia'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -144,7 +144,7 @@ export default async function Home() {
               <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
 
               {post.media_url && (
-                <PostImage src={post.media_url} alt="Post Attachment" />
+                <PostMedia src={post.media_url} alt="Post Attachment" />
               )}
 
               <div className="mt-3 pt-3 border-t border-zinc-800/60 flex items-center justify-between">
