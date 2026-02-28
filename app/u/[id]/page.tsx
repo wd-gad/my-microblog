@@ -2,8 +2,24 @@ import { supabase } from '../../supabase'
 
 export const dynamic = 'force-dynamic'
 
-export default async function UserPage({ params }: { params: { id: string } }) {
-  const userId = params.id
+type Props = {
+  params: { id?: string }
+}
+
+export default async function UserPage({ params }: Props) {
+  const userId = params?.id
+
+  // ★ ここが重要：id が無いなら即エラー表示（undefined をDBに投げない）
+  if (!userId) {
+    return (
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
+        <a href="/" style={{ display: 'inline-block', marginBottom: 16, fontSize: 14 }}>
+          ← Home
+        </a>
+        <p style={{ color: 'crimson' }}>Invalid URL: user id is missing.</p>
+      </main>
+    )
+  }
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -23,12 +39,8 @@ export default async function UserPage({ params }: { params: { id: string } }) {
         ← Home
       </a>
 
-      {profileError && (
-        <p style={{ color: 'crimson' }}>Profile error: {profileError.message}</p>
-      )}
-      {postsError && (
-        <p style={{ color: 'crimson' }}>Posts error: {postsError.message}</p>
-      )}
+      {profileError && <p style={{ color: 'crimson' }}>Profile error: {profileError.message}</p>}
+      {postsError && <p style={{ color: 'crimson' }}>Posts error: {postsError.message}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <div
