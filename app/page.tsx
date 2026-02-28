@@ -105,6 +105,9 @@ export default async function Home() {
               <div className="mt-3 pt-3 border-t border-zinc-800/60 flex items-center justify-between">
                 <PostEngagement
                   postId={post.id}
+                  postContent={post.content}
+                  postAuthorName={prof?.display_name || 'Anonymous'}
+                  postAuthorAvatar={prof?.avatar_url || null}
                   replyCount={replyCounts[post.id] ?? 0}
                   likeCount={likeCounts[post.id] ?? 0}
                   repostCount={repostCounts[post.id] ?? 0}

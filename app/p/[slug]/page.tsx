@@ -110,6 +110,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between">
           <PostEngagement
             postId={post.id}
+            postContent={post.content}
+            postAuthorName={mainProf?.display_name || 'Anonymous'}
+            postAuthorAvatar={mainProf?.avatar_url || null}
             replyCount={replyCounts[post.id] ?? 0}
             likeCount={likeCounts[post.id] ?? 0}
             repostCount={repostCounts[post.id] ?? 0}
@@ -155,6 +158,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                 <div className="mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
                   <PostEngagement
                     postId={reply.id}
+                    postContent={reply.content}
+                    postAuthorName={prof?.display_name || 'Anonymous'}
+                    postAuthorAvatar={prof?.avatar_url || null}
                     replyCount={replyCounts[reply.id] ?? 0}
                     likeCount={likeCounts[reply.id] ?? 0}
                     repostCount={repostCounts[reply.id] ?? 0}
