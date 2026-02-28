@@ -5,6 +5,7 @@ import PostActions from '@/app/PostActions'
 import PostEngagement from '@/app/PostEngagement'
 import ReplyForm from '@/app/ReplyForm'
 import PostMedia from '@/app/PostMedia'
+import QuotedPost from '@/app/QuotedPost'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -43,14 +44,25 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     .order('created_at', { ascending: true })
 
   const allIds = [id, ...(replies ?? []).map((r: any) => r.id)]
-  const allUserIds = [...new Set([post.user_id, ...(replies ?? []).map((r: any) => r.user_id)])]
+  const quotedIds = [post.quoted_post_id, ...(replies ?? []).map((r: any) => r.quoted_post_id)].filter(Boolean)
 
-  const [profilesRes, likeRowsRes, repostRowsRes, replyCountsRes] = await Promise.all([
-    supabase.from('profiles').select('id, display_name, avatar_url').in('id', allUserIds),
+  const [likeRowsRes, repostRowsRes, replyCountsRes, quotedPostsRes] = await Promise.all([
     supabase.from('likes').select('post_id').in('post_id', allIds),
     supabase.from('reposts').select('post_id').in('post_id', allIds),
     supabase.from('posts').select('parent_id').in('parent_id', allIds),
+    quotedIds.length ? supabase.from('posts').select('*').in('id', quotedIds) : Promise.resolve({ data: [] }),
   ])
+
+  const quotedPostsMap: Record<number, any> = {}
+  for (const qp of quotedPostsRes.data ?? []) {
+    quotedPostsMap[qp.id] = qp
+  }
+
+  const directUserIds = [post.user_id, ...(replies ?? []).map((r: any) => r.user_id)]
+  const quotedUserIds = (quotedPostsRes.data ?? []).map((p: any) => p.user_id).filter(Boolean)
+  const allUserIds = [...new Set([...directUserIds, ...quotedUserIds])]
+
+  const profilesRes = allUserIds.length ? await supabase.from('profiles').select('id, display_name, avatar_url').in('id', allUserIds) : { data: [] }
 
   const profileMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {}
   for (const p of profilesRes.data ?? []) {
@@ -112,6 +124,24 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           <PostMedia src={post.media_url} alt="Post Attachment" />
         )}
 
+        {post.quoted_post_id && quotedPostsMap[post.quoted_post_id] && (() => {
+          const qp = quotedPostsMap[post.quoted_post_id]
+          const qpProf = profileMap[qp.user_id] ?? null
+          return (
+            <QuotedPost
+              post={{
+                id: qp.id,
+                userId: qp.user_id,
+                content: qp.content,
+                mediaUrl: qp.media_url,
+                createdAt: qp.created_at,
+                authorName: qpProf?.display_name || 'Anonymous',
+                authorAvatar: qpProf?.avatar_url || null,
+              }}
+            />
+          )
+        })()}
+
         <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between">
           <PostEngagement
             postId={post.id}
@@ -163,6 +193,23 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                 {reply.media_url && (
                   <PostMedia src={reply.media_url} alt="Reply Attachment" />
                 )}
+                {reply.quoted_post_id && quotedPostsMap[reply.quoted_post_id] && (() => {
+                  const qp = quotedPostsMap[reply.quoted_post_id]
+                  const qpProf = profileMap[qp.user_id] ?? null
+                  return (
+                    <QuotedPost
+                      post={{
+                        id: qp.id,
+                        userId: qp.user_id,
+                        content: qp.content,
+                        mediaUrl: qp.media_url,
+                        createdAt: qp.created_at,
+                        authorName: qpProf?.display_name || 'Anonymous',
+                        authorAvatar: qpProf?.avatar_url || null,
+                      }}
+                    />
+                  )
+                })()}
                 <div className="mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
                   <PostEngagement
                     postId={reply.id}

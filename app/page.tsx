@@ -4,6 +4,7 @@ import NewPostForm from './NewPostForm'
 import PostActions from './PostActions'
 import PostEngagement from './PostEngagement'
 import PostMedia from './PostMedia'
+import QuotedPost from './QuotedPost'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -70,22 +71,25 @@ export default async function Home() {
     .order('created_at', { ascending: false })
 
   const postIds = (posts ?? []).map((p: any) => p.id)
-  const userIds = [...new Set((posts ?? []).map((p: any) => p.user_id).filter(Boolean))]
+  const quotedIds = (posts ?? []).map((p: any) => p.quoted_post_id).filter(Boolean)
 
-  const [profilesRes, replyRowsRes, likeRowsRes, repostRowsRes] = await Promise.all([
-    userIds.length
-      ? supabase.from('profiles').select('id, display_name, avatar_url').in('id', userIds)
-      : Promise.resolve({ data: [] }),
-    postIds.length
-      ? supabase.from('posts').select('parent_id').in('parent_id', postIds)
-      : Promise.resolve({ data: [] }),
-    postIds.length
-      ? supabase.from('likes').select('post_id').in('post_id', postIds)
-      : Promise.resolve({ data: [] }),
-    postIds.length
-      ? supabase.from('reposts').select('post_id').in('post_id', postIds)
-      : Promise.resolve({ data: [] }),
+  const [replyRowsRes, likeRowsRes, repostRowsRes, quotedPostsRes] = await Promise.all([
+    postIds.length ? supabase.from('posts').select('parent_id').in('parent_id', postIds) : Promise.resolve({ data: [] }),
+    postIds.length ? supabase.from('likes').select('post_id').in('post_id', postIds) : Promise.resolve({ data: [] }),
+    postIds.length ? supabase.from('reposts').select('post_id').in('post_id', postIds) : Promise.resolve({ data: [] }),
+    quotedIds.length ? supabase.from('posts').select('*').in('id', quotedIds) : Promise.resolve({ data: [] }),
   ])
+
+  const quotedPostsMap: Record<number, any> = {}
+  for (const qp of quotedPostsRes.data ?? []) {
+    quotedPostsMap[qp.id] = qp
+  }
+
+  const directUserIds = (posts ?? []).map((p: any) => p.user_id).filter(Boolean)
+  const quotedUserIds = (quotedPostsRes.data ?? []).map((p: any) => p.user_id).filter(Boolean)
+  const allUserIds = [...new Set([...directUserIds, ...quotedUserIds])]
+
+  const profilesRes = allUserIds.length ? await supabase.from('profiles').select('id, display_name, avatar_url').in('id', allUserIds) : { data: [] }
 
   const profileMap: Record<string, { display_name: string | null; avatar_url: string | null }> = {}
   for (const p of profilesRes.data ?? []) {
@@ -146,6 +150,24 @@ export default async function Home() {
               {post.media_url && (
                 <PostMedia src={post.media_url} alt="Post Attachment" />
               )}
+
+              {post.quoted_post_id && quotedPostsMap[post.quoted_post_id] && (() => {
+                const qp = quotedPostsMap[post.quoted_post_id]
+                const qpProf = profileMap[qp.user_id] ?? null
+                return (
+                  <QuotedPost
+                    post={{
+                      id: qp.id,
+                      userId: qp.user_id,
+                      content: qp.content,
+                      mediaUrl: qp.media_url,
+                      createdAt: qp.created_at,
+                      authorName: qpProf?.display_name || 'Anonymous',
+                      authorAvatar: qpProf?.avatar_url || null,
+                    }}
+                  />
+                )
+              })()}
 
               <div className="mt-3 pt-3 border-t border-zinc-800/60 flex items-center justify-between">
                 <PostEngagement
