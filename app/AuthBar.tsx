@@ -93,7 +93,12 @@ export default function AuthBar() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent
+  align="end"
+  side="bottom"
+  sideOffset={8}
+  className="w-56 bg-popover text-popover-foreground border shadow-md"
+>
         <div className="px-2 py-1.5">
           <div className="text-sm font-medium truncate">{profile?.display_name ?? 'User'}</div>
           <div className="text-xs text-muted-foreground truncate">{email}</div>
