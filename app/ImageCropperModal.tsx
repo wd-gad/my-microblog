@@ -93,7 +93,7 @@ export default function ImageCropperModal({
             {/* Controls */}
             <div className="w-full max-w-sm mx-auto p-4 space-y-5 bg-black">
                 {/* Aspect Ratio Buttons */}
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                     <button
                         onClick={() => setAspect(undefined)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === undefined ? 'bg-indigo-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
@@ -106,14 +106,28 @@ export default function ImageCropperModal({
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 1 ? 'bg-indigo-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                             }`}
                     >
-                        1:1 Square
+                        Square (1:1)
+                    </button>
+                    <button
+                        onClick={() => setAspect(4 / 5)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 4 / 5 ? 'bg-indigo-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            }`}
+                    >
+                        Portrait (4:5)
+                    </button>
+                    <button
+                        onClick={() => setAspect(4 / 3)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 4 / 3 ? 'bg-indigo-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            }`}
+                    >
+                        Landscape (4:3)
                     </button>
                     <button
                         onClick={() => setAspect(16 / 9)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 16 / 9 ? 'bg-indigo-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                             }`}
                     >
-                        16:9 Wide
+                        Wide (16:9)
                     </button>
                 </div>
 
