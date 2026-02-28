@@ -1,13 +1,41 @@
-export default function Home() {
+import { supabase } from './supabase'
+import NewPostForm from './NewPostForm'
+export default async function Home() {
+  const { data: posts, error } = await supabase
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false })
+
   return (
-    <main className="max-w-2xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-8">My Microblog</h1>
-      <div className="space-y-4">
-        <div className="border rounded-lg p-4">
-          <p className="text-gray-500 text-sm">2024-01-01</p>
-          <p className="mt-2">はじめての投稿です。</p>
-        </div>
-      </div>
+    <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
+      <NewPostForm />
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>
+        My Microblog
+      </h1>
+
+      {error && (
+        <p style={{ color: 'crimson' }}>
+          Supabase error: {error.message}
+        </p>
+      )}
+
+      {!posts || posts.length === 0 ? (
+        <p>まだ投稿がありません（または取得できていません）。</p>
+      ) : (
+        <ul style={{ display: 'grid', gap: 12, listStyle: 'none', padding: 0 }}>
+          {posts.map((p: any) => (
+            <li
+              key={p.id}
+              style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}
+            >
+              <div style={{ whiteSpace: 'pre-wrap' }}>{p.content}</div>
+              <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
+                {new Date(p.created_at).toLocaleString('ja-JP')}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   )
 }
