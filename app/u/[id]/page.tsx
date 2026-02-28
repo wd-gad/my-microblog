@@ -1,37 +1,59 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { supabase } from '../../supabase'
 
-export const dynamic = 'force-dynamic'
-
-type Props = {
-  params: { id?: string }
+type Profile = {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
 }
 
-export default async function UserPage({ params }: Props) {
-  const userId = params?.id
+type Post = {
+  id: number
+  content: string
+  created_at: string
+}
 
-  // ★ ここが重要：id が無いなら即エラー表示（undefined をDBに投げない）
-  if (!userId) {
-    return (
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: 16, fontSize: 14 }}>
-          ← Home
-        </a>
-        <p style={{ color: 'crimson' }}>Invalid URL: user id is missing.</p>
-      </main>
-    )
-  }
+export default function UserPage() {
+  const params = useParams()
+  const userId = params?.id as string | undefined
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, display_name, avatar_url')
-    .eq('id', userId)
-    .single()
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  const { data: posts, error: postsError } = await supabase
-    .from('posts')
-    .select('id, content, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+  useEffect(() => {
+    const run = async () => {
+      if (!userId) {
+        setError('Invalid URL: user id is missing.')
+        return
+      }
+
+      setError(null)
+
+      const { data: profileData, error: pe } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .eq('id', userId)
+        .single()
+
+      if (pe) setError(`Profile error: ${pe.message}`)
+      setProfile(profileData as any)
+
+      const { data: postsData, error: poe } = await supabase
+        .from('posts')
+        .select('id, content, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (poe) setError((prev) => prev ? `${prev}\nPosts error: ${poe.message}` : `Posts error: ${poe.message}`)
+      setPosts((postsData ?? []) as any)
+    }
+
+    run()
+  }, [userId])
 
   return (
     <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
@@ -39,8 +61,7 @@ export default async function UserPage({ params }: Props) {
         ← Home
       </a>
 
-      {profileError && <p style={{ color: 'crimson' }}>Profile error: {profileError.message}</p>}
-      {postsError && <p style={{ color: 'crimson' }}>Posts error: {postsError.message}</p>}
+      {error && <p style={{ color: 'crimson', whiteSpace: 'pre-wrap' }}>{error}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <div
@@ -68,11 +89,11 @@ export default async function UserPage({ params }: Props) {
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
             {profile?.display_name ?? 'Unknown User'}
           </h1>
-          <div style={{ fontSize: 12, opacity: 0.6 }}>{userId}</div>
+          <div style={{ fontSize: 12, opacity: 0.6 }}>{userId ?? ''}</div>
         </div>
       </div>
 
-      {!posts?.length ? (
+      {!posts.length ? (
         <p>まだ投稿がありません。</p>
       ) : (
         <ul style={{ display: 'grid', gap: 12, listStyle: 'none', padding: 0 }}>
