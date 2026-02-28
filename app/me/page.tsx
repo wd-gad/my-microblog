@@ -1,162 +1,228 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
+type Profile = {
+  display_name: string | null
+  avatar_url: string | null
+}
 
 export default function MePage() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
+
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [displayName, setDisplayName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+
+  const fallback = useMemo(() => {
+    const base = displayName || email || 'U'
+    return base.slice(0, 1).toUpperCase()
+  }, [displayName, email])
+
+  const load = async () => {
+    setStatus(null)
+    setLoading(true)
+    try {
+      const { data } = await supabase.auth.getUser()
+      const user = data.user
+      if (!user) {
+        setStatus('ログインしてください')
+        setUserId(null)
+        setEmail(null)
+        setProfile(null)
+        return
+      }
+
+      setUserId(user.id)
+      setEmail(user.email ?? null)
+
+      const { data: p, error } = await supabase
+        .from('profiles')
+        .select('display_name, avatar_url')
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        setStatus(error.message)
+        setProfile(null)
+        setDisplayName('')
+        return
+      }
+
+      setProfile((p as any) ?? null)
+      setDisplayName(p?.display_name ?? '')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const load = async () => {
+    load()
+    const { data: sub } = supabase.auth.onAuthStateChange(() => load())
+    return () => sub.subscription.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const saveName = async () => {
+    setStatus(null)
+    setSaving(true)
+    try {
       const { data } = await supabase.auth.getUser()
       const user = data.user
       if (!user) {
         setStatus('ログインしてください')
         return
       }
-      setEmail(user.email ?? null)
 
-      const { data: profile } = await supabase
+      const { error } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url')
+        .update({ display_name: displayName, updated_at: new Date().toISOString() })
         .eq('id', user.id)
-        .single()
 
-      setDisplayName(profile?.display_name ?? '')
-      setAvatarUrl(profile?.avatar_url ?? null)
+      if (error) {
+        setStatus(error.message)
+        return
+      }
+
+      setStatus('保存しました')
+      setProfile((prev) => ({ ...(prev ?? { avatar_url: null, display_name: null }), display_name: displayName }))
+    } finally {
+      setSaving(false)
     }
-    load()
-  }, [])
-
-  const saveName = async () => {
-    setStatus(null)
-    setLoading(true)
-
-    const { data } = await supabase.auth.getUser()
-    const user = data.user
-    if (!user) {
-      setLoading(false)
-      setStatus('ログインしてください')
-      return
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ display_name: displayName, updated_at: new Date().toISOString() })
-      .eq('id', user.id)
-
-    setLoading(false)
-    setStatus(error ? error.message : '保存しました')
   }
 
   const uploadAvatar = async (file: File) => {
     setStatus(null)
-    setLoading(true)
+    setUploading(true)
+    try {
+      const { data } = await supabase.auth.getUser()
+      const user = data.user
+      if (!user) {
+        setStatus('ログインしてください')
+        return
+      }
 
-    const { data } = await supabase.auth.getUser()
-    const user = data.user
-    if (!user) {
-      setLoading(false)
-      setStatus('ログインしてください')
-      return
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+      const path = `${user.id}/avatar.${ext}`
+
+      const { error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type })
+
+      if (upErr) {
+        setStatus(upErr.message)
+        return
+      }
+
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
+      const url = pub.publicUrl
+
+      const { error: profErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url, updated_at: new Date().toISOString() })
+        .eq('id', user.id)
+
+      if (profErr) {
+        setStatus(profErr.message)
+        return
+      }
+
+      setProfile((prev) => ({ ...(prev ?? { avatar_url: null, display_name: null }), avatar_url: url }))
+      setStatus('アイコン更新しました')
+    } finally {
+      setUploading(false)
     }
-
-    const ext = file.name.split('.').pop() || 'png'
-    const path = `${user.id}/avatar.${ext}`
-
-    // 同名があれば上書きしたいので update を使う（無ければ upload に切り替える）
-    const { error: upErr } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true, contentType: file.type })
-
-    if (upErr) {
-      setLoading(false)
-      setStatus(upErr.message)
-      return
-    }
-
-    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
-    const url = pub.publicUrl
-
-    const { error: profErr } = await supabase
-      .from('profiles')
-      .update({ avatar_url: url, updated_at: new Date().toISOString() })
-      .eq('id', user.id)
-
-    setAvatarUrl(url)
-    setLoading(false)
-    setStatus(profErr ? profErr.message : 'アイコン更新しました')
   }
 
   return (
-    <main style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: 16, fontSize: 14 }}>
-        ← Home
-      </a>
-
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>My Profile</h1>
-
-      {status && <p style={{ color: status.includes('保存') ? 'green' : 'crimson' }}>{status}</p>}
-
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 999,
-            border: '1px solid #ddd',
-            overflow: 'hidden',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 12,
-            opacity: 0.7,
-          }}
-        >
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            'No Img'
-          )}
-        </div>
-
+    <main className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>{email ?? ''}</div>
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="表示名"
-            style={{ border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px', width: 260, marginTop: 6 }}
-          />
-          <div style={{ marginTop: 8 }}>
-            <button
-              onClick={saveName}
-              disabled={loading}
-              style={{ border: '1px solid #ddd', borderRadius: 8, padding: '6px 10px' }}
-            >
-              {loading ? '...' : '表示名を保存'}
-            </button>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+          <p className="text-sm text-muted-foreground">表示名とアイコンを編集できます</p>
         </div>
+        <Button variant="outline" onClick={() => (location.href = '/')}>
+          Home
+        </Button>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: 12, opacity: 0.7, marginBottom: 6 }}>
-          アイコン画像（png/jpg）
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) uploadAvatar(f)
-          }}
-        />
-      </div>
+      {status && (
+        <div className={`text-sm ${status.includes('しました') || status.includes('保存') ? 'text-green-600' : 'text-red-600'}`}>
+          {status}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Account</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : !userId ? (
+            <p className="text-sm text-muted-foreground">ログインしてください。</p>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-14 w-14">
+                  <AvatarImage src={profile?.avatar_url ?? ''} alt="avatar" />
+                  <AvatarFallback>{fallback}</AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{displayName || 'No display name'}</div>
+                  <div className="text-xs text-muted-foreground truncate">{email}</div>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-xs text-muted-foreground">表示名</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="表示名"
+                  />
+                  <Button onClick={saveName} disabled={saving}>
+                    {saving ? 'Saving…' : '保存'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-xs text-muted-foreground">アイコン</label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) uploadAvatar(f)
+                    }}
+                    disabled={uploading}
+                  />
+                  <Button variant="outline" disabled>
+                    {uploading ? 'Uploading…' : 'Upload'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  画像を選ぶと自動でアップロードします（png/jpg推奨）
+                </p>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </main>
   )
 }
