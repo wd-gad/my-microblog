@@ -29,31 +29,47 @@ export default function MePage() {
     return base.slice(0, 1).toUpperCase()
   }, [displayName, email])
 
-  const load = async () => {
+  const loadOnce = async () => {
     setStatus(null)
-    setLoading(true)
+
+    // もし何かで固まっても3秒で必ず抜ける（UIフリーズ防止）
+    const timeout = setTimeout(() => {
+      setLoading(false)
+      setStatus('読み込みがタイムアウトしました。リロードしてください。')
+    }, 3000)
+
     try {
-      const { data } = await supabase.auth.getUser()
-      const user = data.user
-      if (!user) {
-        setStatus('ログインしてください')
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
+        setStatus(error.message)
         setUserId(null)
         setEmail(null)
         setProfile(null)
+        setDisplayName('')
+        return
+      }
+
+      const user = data.user
+      if (!user) {
+        setUserId(null)
+        setEmail(null)
+        setProfile(null)
+        setDisplayName('')
+        setStatus('ログインしてください')
         return
       }
 
       setUserId(user.id)
       setEmail(user.email ?? null)
 
-      const { data: p, error } = await supabase
+      const { data: p, error: pe } = await supabase
         .from('profiles')
         .select('display_name, avatar_url')
         .eq('id', user.id)
         .single()
 
-      if (error) {
-        setStatus(error.message)
+      if (pe) {
+        setStatus(pe.message)
         setProfile(null)
         setDisplayName('')
         return
@@ -61,15 +77,21 @@ export default function MePage() {
 
       setProfile((p as any) ?? null)
       setDisplayName(p?.display_name ?? '')
+    } catch (e: any) {
+      setStatus(String(e?.message ?? e))
+      setUserId(null)
+      setEmail(null)
+      setProfile(null)
+      setDisplayName('')
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    load()
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load())
-    return () => sub.subscription.unsubscribe()
+    loadOnce()
+    // onAuthStateChange は一旦外す（無限ループ/連発の温床）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -151,9 +173,14 @@ export default function MePage() {
           <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
           <p className="text-sm text-muted-foreground">表示名とアイコンを編集できます</p>
         </div>
-        <Button variant="outline" onClick={() => (location.href = '/')}>
-          Home
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => loadOnce()} disabled={loading}>
+            Reload
+          </Button>
+          <Button variant="outline" onClick={() => (location.href = '/')}>
+            Home
+          </Button>
+        </div>
       </div>
 
       {status && (
@@ -188,11 +215,7 @@ export default function MePage() {
               <div className="grid gap-2">
                 <label className="text-xs text-muted-foreground">表示名</label>
                 <div className="flex gap-2">
-                  <Input
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="表示名"
-                  />
+                  <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="表示名" />
                   <Button onClick={saveName} disabled={saving}>
                     {saving ? 'Saving…' : '保存'}
                   </Button>
@@ -201,20 +224,15 @@ export default function MePage() {
 
               <div className="grid gap-2">
                 <label className="text-xs text-muted-foreground">アイコン</label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      if (f) uploadAvatar(f)
-                    }}
-                    disabled={uploading}
-                  />
-                  <Button variant="outline" disabled>
-                    {uploading ? 'Uploading…' : 'Upload'}
-                  </Button>
-                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) uploadAvatar(f)
+                  }}
+                  disabled={uploading}
+                />
                 <p className="text-xs text-muted-foreground">
                   画像を選ぶと自動でアップロードします（png/jpg推奨）
                 </p>
