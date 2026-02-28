@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import NewPostForm from './NewPostForm'
+export const dynamic = 'force-dynamic'
 export default async function Home() {
   const { data: posts, error } = await supabase
     .from('posts')
