@@ -6,6 +6,7 @@ import PostEngagement from '@/app/PostEngagement'
 import ReplyForm from '@/app/ReplyForm'
 import PostMedia from '@/app/PostMedia'
 import QuotedPost from '@/app/QuotedPost'
+import TimelineRealtime from '@/app/TimelineRealtime'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -93,6 +94,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+      <TimelineRealtime />
       <Link href="/" className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
         ← ホームに戻る
       </Link>
@@ -137,6 +139,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                 createdAt: qp.created_at,
                 authorName: qpProf?.display_name || 'Anonymous',
                 authorAvatar: qpProf?.avatar_url || null,
+                quotedPostId: qp.quoted_post_id,
               }}
             />
           )
@@ -206,6 +209,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                         createdAt: qp.created_at,
                         authorName: qpProf?.display_name || 'Anonymous',
                         authorAvatar: qpProf?.avatar_url || null,
+                        quotedPostId: qp.quoted_post_id,
                       }}
                     />
                   )

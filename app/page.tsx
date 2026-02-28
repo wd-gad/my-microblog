@@ -5,6 +5,7 @@ import PostActions from './PostActions'
 import PostEngagement from './PostEngagement'
 import PostMedia from './PostMedia'
 import QuotedPost from './QuotedPost'
+import TimelineRealtime from './TimelineRealtime'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -116,6 +117,7 @@ export default async function Home() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6">
+      <TimelineRealtime />
       <div className="mb-5">
         <NewPostForm />
       </div>
@@ -164,6 +166,7 @@ export default async function Home() {
                       createdAt: qp.created_at,
                       authorName: qpProf?.display_name || 'Anonymous',
                       authorAvatar: qpProf?.avatar_url || null,
+                      quotedPostId: qp.quoted_post_id,
                     }}
                   />
                 )
