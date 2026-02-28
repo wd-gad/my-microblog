@@ -9,6 +9,10 @@ import Cropper from 'react-easy-crop'
 import { Slider } from '@/components/ui/slider'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Link from 'next/link'
+import PostMedia from '../PostMedia'
+import QuotedPost from '../QuotedPost'
+import PostActions from '../PostActions'
+import PostEngagement from '../PostEngagement'
 
 type Profile = {
   display_name: string | null
@@ -35,7 +39,12 @@ export default function MePage() {
   const [displayName, setDisplayName] = useState('')
   const [bio, setBio] = useState('')
   const [status, setStatus] = useState<string | null>(null)
+
   const [posts, setPosts] = useState<any[]>([])
+  const [profilesMap, setProfilesMap] = useState<Record<string, any>>({})
+  const [quotedPostsMap, setQuotedPostsMap] = useState<Record<number, any>>({})
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
 
   const onPickFile = (f: File) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -135,14 +144,47 @@ export default function MePage() {
       setDisplayName(p?.display_name ?? '')
       setBio(p?.bio ?? '')
 
+      // Fetch follow counts
+      const { count: followers } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', user.id)
+
+      const { count: following } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', user.id)
+
+      setFollowerCount(followers ?? 0)
+      setFollowingCount(following ?? 0)
+
       // Fetch own posts
       const { data: ps } = await supabase
         .from('posts')
-        .select('id, content, created_at, media_url')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      setPosts(ps ?? [])
+      const fetchedPosts = ps ?? []
+      setPosts(fetchedPosts)
+
+      // Fetch associated profiles and quoted posts for timeline items
+      const allUserIds = Array.from(new Set(fetchedPosts.map((p: any) => p.user_id)))
+      const quotedIds = fetchedPosts.map((p: any) => p.quoted_post_id).filter(Boolean)
+
+      const [profilesRes, quotedPostsRes] = await Promise.all([
+        allUserIds.length ? supabase.from('profiles').select('id, display_name, avatar_url').in('id', allUserIds) : Promise.resolve({ data: [] }),
+        quotedIds.length ? supabase.from('posts').select('*').in('id', quotedIds) : Promise.resolve({ data: [] })
+      ])
+
+      const pMap: Record<string, any> = {}
+      for (const pr of profilesRes.data ?? []) pMap[pr.id] = pr
+      setProfilesMap(pMap)
+
+      const qMap: Record<number, any> = {}
+      for (const qp of quotedPostsRes.data ?? []) qMap[qp.id] = qp
+      setQuotedPostsMap(qMap)
+
     } catch (e: any) {
       setStatus(String(e?.message ?? e))
       setUserId(null)
@@ -281,18 +323,23 @@ export default function MePage() {
           ) : (
             <>
               <div className="flex items-center gap-4">
-                <Avatar className="h-14 w-14">
-                  <AvatarImage src={profile?.avatar_url ?? ''} alt="avatar" />
+                <Avatar className="h-14 w-14 border border-zinc-800">
+                  <AvatarImage src={profile?.avatar_url ?? ''} alt="avatar" className="object-cover" />
                   <AvatarFallback>{fallback}</AvatarFallback>
                 </Avatar>
 
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium truncate">{displayName || 'No display name'}</div>
                   <div className="text-xs text-muted-foreground truncate">{email}</div>
+
+                  <div className="flex gap-4 mt-2 text-xs text-zinc-400">
+                    <div><span className="font-semibold text-zinc-200">{followingCount}</span> フォロー中</div>
+                    <div><span className="font-semibold text-zinc-200">{followerCount}</span> フォロワー</div>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2 border-t border-zinc-800/60 pt-4 mt-2">
                 <label className="text-xs text-muted-foreground">表示名</label>
                 <div className="flex gap-2">
                   <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="表示名" />
@@ -359,12 +406,73 @@ export default function MePage() {
             {posts.length === 0 ? (
               <p className="text-sm text-zinc-600 text-center py-8">まだ投稿がありません。</p>
             ) : (
-              posts.map((p) => (
-                <Link key={p.id} href={`/p/${p.id}`} className="block bg-zinc-900 border border-zinc-800/60 rounded-2xl p-4 hover:border-zinc-700 transition-colors">
-                  <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">{p.content}</p>
-                  <p className="mt-2 text-xs text-zinc-500">{new Date(p.created_at).toLocaleString('ja-JP')}</p>
-                </Link>
-              ))
+              posts.map((p) => {
+                const displayAuthor = displayName || 'Unknown User'
+                return (
+                  <div key={p.id} className="block bg-zinc-900 border border-zinc-800/60 rounded-2xl p-4 hover:border-zinc-700 transition-colors">
+                    <div onClick={() => window.location.href = `/p/${p.id}`} className="cursor-pointer">
+                      {p.reply_to && (
+                        <div className="text-xs text-zinc-500 mb-2 flex items-center gap-1.5 ml-1">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                          返信
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-3">
+                        {profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt="avatar" className="h-10 w-10 rounded-full object-cover ring-1 ring-zinc-800" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-medium text-white shadow-inner">{fallback}</div>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-zinc-200 truncate">{displayAuthor}</p>
+                            <p className="text-xs text-zinc-500 truncate flex-shrink-0">{new Date(p.created_at).toLocaleString('ja-JP')}</p>
+                          </div>
+                          <p className="mt-1 text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap break-words">{p.content}</p>
+
+                          {p.media_url && (
+                            <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800/60 bg-black/20">
+                              <PostMedia src={p.media_url} alt="Attached Media" />
+                            </div>
+                          )}
+
+                          {p.quoted_post_id && quotedPostsMap[p.quoted_post_id] && (
+                            <div className="mt-3">
+                              <QuotedPost
+                                post={{
+                                  id: quotedPostsMap[p.quoted_post_id].id,
+                                  content: quotedPostsMap[p.quoted_post_id].content,
+                                  userId: quotedPostsMap[p.quoted_post_id].user_id,
+                                  authorName: profilesMap[quotedPostsMap[p.quoted_post_id].user_id]?.display_name ?? 'Unknown',
+                                  authorAvatar: profilesMap[quotedPostsMap[p.quoted_post_id].user_id]?.avatar_url ?? null,
+                                  mediaUrl: quotedPostsMap[p.quoted_post_id].media_url ?? null,
+                                  createdAt: quotedPostsMap[p.quoted_post_id].created_at,
+                                  quotedPostId: quotedPostsMap[p.quoted_post_id].quoted_post_id ?? null
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pl-13 flex items-center justify-between border-t border-zinc-800/40 pt-3">
+                      <PostEngagement
+                        postId={p.id}
+                        postContent={p.content}
+                        postAuthorName={displayAuthor}
+                        postAuthorAvatar={profile?.avatar_url ?? null}
+                        replyCount={0}
+                        repostCount={0}
+                        likeCount={0}
+                      />
+                      <PostActions postId={p.id} authorUserId={p.user_id} initialContent={p.content} />
+                    </div>
+                  </div>
+                )
+              })
             )}
           </div>
         </div>
