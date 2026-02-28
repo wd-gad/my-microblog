@@ -4,6 +4,7 @@ import Link from 'next/link'
 import PostActions from '@/app/PostActions'
 import PostEngagement from '@/app/PostEngagement'
 import ReplyForm from '@/app/ReplyForm'
+import PostImage from '@/app/PostImage'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -108,9 +109,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         <p className="text-zinc-100 leading-7 whitespace-pre-wrap break-words">{post.content}</p>
 
         {post.media_url && (
-          <div className="rounded-xl overflow-hidden border border-zinc-800">
-            <img src={post.media_url} alt="Post Attachment" className="w-full h-auto max-h-[32rem] object-cover" />
-          </div>
+          <PostImage src={post.media_url} alt="Post Attachment" />
         )}
 
         <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between">
@@ -162,9 +161,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                 </div>
                 <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">{reply.content}</p>
                 {reply.media_url && (
-                  <div className="mt-2 rounded-xl overflow-hidden border border-zinc-800/60">
-                    <img src={reply.media_url} alt="Reply Attachment" className="w-full h-auto max-h-64 object-cover" />
-                  </div>
+                  <PostImage src={reply.media_url} alt="Reply Attachment" />
                 )}
                 <div className="mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
                   <PostEngagement

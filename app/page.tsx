@@ -3,6 +3,7 @@ import Link from 'next/link'
 import NewPostForm from './NewPostForm'
 import PostActions from './PostActions'
 import PostEngagement from './PostEngagement'
+import PostImage from './PostImage'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('ja-JP', {
@@ -21,6 +22,46 @@ function isEdited(createdAt: string, updatedAt: string | null) {
 
 export default async function Home() {
   const supabase = await createClient()
+
+  // Check authentication
+  const { data: sessionData } = await supabase.auth.getSession()
+  const isAuth = !!sessionData.session
+
+  if (!isAuth) {
+    return (
+      <main className="min-h-[calc(100vh-64px)] w-full flex flex-col items-center justify-center relative overflow-hidden bg-black text-white px-4">
+        {/* Geometric Background */}
+        <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{
+          backgroundImage: `
+            linear-gradient(to right, #ffffff1a 1px, transparent 1px),
+            linear-gradient(to bottom, #ffffff1a 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+          maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)'
+        }}>
+          {/* Decorative shapes */}
+          <div className="absolute top-[20%] left-[15%] w-64 h-64 border border-indigo-500/30 rounded-full blur-sm" />
+          <div className="absolute bottom-[20%] right-[15%] w-72 h-72 border border-pink-500/30 rotate-45 blur-sm" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto space-y-6">
+          <h1 className="text-5xl md:text-6xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 drop-shadow-sm">
+            My Microblog
+          </h1>
+          <p className="text-zinc-400 text-lg md:text-xl font-medium">
+            Join the conversation. Uncensored, unfiltered, unbiased.
+          </p>
+          <div className="pt-4 animate-bounce">
+            <svg className="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </div>
+          <p className="text-xs text-zinc-500 mt-2">Sign in using the button in the top right corner.</p>
+        </div>
+      </main>
+    )
+  }
 
   const { data: posts } = await supabase
     .from('posts')
@@ -103,9 +144,7 @@ export default async function Home() {
               <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap break-words">{post.content}</p>
 
               {post.media_url && (
-                <div className="mt-3 rounded-xl overflow-hidden border border-zinc-800">
-                  <img src={post.media_url} alt="Post Attachment" className="w-full h-auto max-h-96 object-cover" />
-                </div>
+                <PostImage src={post.media_url} alt="Post Attachment" />
               )}
 
               <div className="mt-3 pt-3 border-t border-zinc-800/60 flex items-center justify-between">
