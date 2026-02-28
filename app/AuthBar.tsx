@@ -43,11 +43,7 @@ export default function AuthBar() {
 
   useEffect(() => {
     load()
-
-    const { data: sub } = supabase.auth.onAuthStateChange(async () => {
-      await load()
-    })
-
+    const { data: sub } = supabase.auth.onAuthStateChange(() => load())
     return () => sub.subscription.unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -64,47 +60,35 @@ export default function AuthBar() {
     location.href = '/'
   }
 
-  if (loading) {
-    return <div className="text-xs text-muted-foreground">...</div>
-  }
+  if (loading) return <div className="text-xs text-muted-foreground">...</div>
 
-  if (!email) {
-    return <Button onClick={signIn}>Login with Google</Button>
-  }
+  if (!email) return <Button onClick={signIn}>Login with Google</Button>
 
   const name = profile?.display_name ?? email
   const fallback = (name ?? 'U').slice(0, 1).toUpperCase()
 
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-full border px-2 py-1 hover:bg-muted">
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={profile?.avatar_url ?? ''} alt="avatar" />
-              <AvatarFallback>{fallback}</AvatarFallback>
-            </Avatar>
-            <span className="max-w-[180px] truncate text-xs text-muted-foreground">
-              {email}
-            </span>
-          </button>
-        </DropdownMenuTrigger>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="gap-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={profile?.avatar_url ?? ''} alt="avatar" />
+            <AvatarFallback>{fallback}</AvatarFallback>
+          </Avatar>
+          <span className="max-w-[160px] truncate text-xs">{email}</span>
+        </Button>
+      </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-2 py-1.5">
-            <div className="text-sm font-medium truncate">{profile?.display_name ?? 'User'}</div>
-            <div className="text-xs text-muted-foreground truncate">{email}</div>
-          </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => (location.href = '/me')}>
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={signOut}>
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-2 py-1.5">
+          <div className="text-sm font-medium truncate">{profile?.display_name ?? 'User'}</div>
+          <div className="text-xs text-muted-foreground truncate">{email}</div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => (location.href = '/me')}>Profile</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={signOut}>Logout</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
